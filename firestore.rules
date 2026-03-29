@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: settings/global
+    // Fields:
+    //   - siteTitle: string (required)
+    //   - accentColor: string (required, hex)
+    //   - contactEmail: string (email)
+    //   - kakaoUrl: string
+    //   - instaUrl: string
+    //
+    // Collection: portfolio
+    // Fields:
+    //   - title: string (required)
+    //   - category: string
+    //   - imageUrl: string (required)
+    //   - description: string
+    //   - order: number
+    //
+    // Collection: notices
+    // Fields:
+    //   - title: string (required)
+    //   - content: string (required)
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "pjunes84@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidHexColor(color) {
+      return color is string && color.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$");
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // Site Settings
+    match /settings/global {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Portfolio
+    match /portfolio/{itemId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Notices
+    match /notices/{noticeId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Inquiries
+    match /inquiries/{inquiryId} {
+      allow create: if true; // Allow anyone to submit an inquiry
+      allow read, delete: if isAdmin();
+    }
+
+    // Users (for role management)
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}

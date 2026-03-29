@@ -1,0 +1,72 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "Site Settings",
+      "description": "Global settings for the website including theme, title, and contact info.",
+      "type": "object",
+      "properties": {
+        "siteTitle": { "type": "string", "description": "The main title of the website." },
+        "accentColor": { "type": "string", "description": "The primary accent color (hex code)." },
+        "contactEmail": { "type": "string", "format": "email", "description": "Contact email for inquiries." },
+        "kakaoUrl": { "type": "string", "description": "KakaoTalk link." },
+        "instaUrl": { "type": "string", "description": "Instagram link." }
+      },
+      "required": ["siteTitle", "accentColor"]
+    },
+    "PortfolioItem": {
+      "title": "Portfolio Item",
+      "description": "A project entry in the portfolio gallery.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Project title." },
+        "category": { "type": "string", "description": "Project category (e.g., Logo, Web)." },
+        "imageUrl": { "type": "string", "description": "URL of the project image." },
+        "description": { "type": "string", "description": "Brief project description." },
+        "order": { "type": "number", "description": "Display order." }
+      },
+      "required": ["title", "imageUrl"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "A news or announcement post.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Notice title." },
+        "content": { "type": "string", "description": "Notice content (Markdown supported)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["title", "content"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "A customer inquiry from the contact form.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Customer name." },
+        "email": { "type": "string", "format": "email", "description": "Customer email." },
+        "phone": { "type": "string", "description": "Customer phone number." },
+        "message": { "type": "string", "description": "Inquiry message." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Submission timestamp." }
+      },
+      "required": ["name", "email", "message"]
+    }
+  },
+  "firestore": {
+    "settings/global": {
+      "schema": "SiteSettings",
+      "description": "Global website configuration."
+    },
+    "portfolio": {
+      "schema": "PortfolioItem",
+      "description": "Collection of portfolio projects."
+    },
+    "notices": {
+      "schema": "Notice",
+      "description": "Collection of announcements."
+    },
+    "inquiries": {
+      "schema": "Inquiry",
+      "description": "Collection of customer inquiries."
+    }
+  }
+}
