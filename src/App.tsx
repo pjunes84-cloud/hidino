@@ -166,7 +166,7 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
 
   const [settings, setSettings] = useState<SiteSettings>({
-    siteTitle: '상상점포',
+    siteTitle: '상상마켓',
     accentColor: '#8A2BE2',
     contactEmail: 'pjunes84@gmail.com',
     kakaoUrl: '',
@@ -228,10 +228,13 @@ export default function App() {
       setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Notice)));
     }, (err) => handleFirestoreError(err, OperationType.LIST, 'notices'));
 
-    const qInquiries = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
-    const unsubInquiries = onSnapshot(qInquiries, (snap) => {
-      setInquiries(snap.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry)));
-    }, (err) => handleFirestoreError(err, OperationType.LIST, 'inquiries'));
+    let unsubInquiries = () => {};
+    if (isAdmin) {
+      const qInquiries = query(collection(db, 'inquiries'), orderBy('createdAt', 'desc'));
+      unsubInquiries = onSnapshot(qInquiries, (snap) => {
+        setInquiries(snap.docs.map(d => ({ id: d.id, ...d.data() } as Inquiry)));
+      }, (err) => handleFirestoreError(err, OperationType.LIST, 'inquiries'));
+    }
 
     return () => {
       unsubSettings();
@@ -239,7 +242,7 @@ export default function App() {
       unsubNotices();
       unsubInquiries();
     };
-  }, [isAuthReady]);
+  }, [isAuthReady, isAdmin]);
 
   const handleLogin = async () => {
     try {
@@ -389,7 +392,7 @@ export default function App() {
                 <span className="text-xl font-bold tracking-tighter">{settings.siteTitle}</span>
               </div>
               <p className="text-zinc-500 max-w-sm leading-relaxed">
-                상상점포는 브랜드의 가치를 시각적으로 구현하는 프리미엄 디자인 에이전시입니다. 
+                상상마켓은 브랜드의 가치를 시각적으로 구현하는 프리미엄 디자인 에이전시입니다. 
                 당신의 상상을 현실로 만드는 가장 세련된 방법을 제안합니다.
               </p>
             </div>
@@ -410,7 +413,7 @@ export default function App() {
               <ul className="space-y-4 text-zinc-500 text-sm">
                 <li>Privacy Policy</li>
                 <li>Terms of Service</li>
-                <li>© 2026 Sangsang Store.</li>
+                <li>© 2026 Sangsang Market.</li>
               </ul>
             </div>
           </div>
@@ -505,7 +508,7 @@ function MainContent({ settings, portfolio, notices }: { settings: SiteSettings,
               transition={{ delay: 0.4 }}
               className="text-zinc-400 text-lg md:text-xl max-w-xl mb-12 leading-relaxed font-light"
             >
-              상상점포는 당신의 머릿속에만 머물던 아이디어를 <br className="hidden md:block" />
+              상상마켓은 당신의 머릿속에만 머물던 아이디어를 <br className="hidden md:block" />
               가장 세련되고 감각적인 비주얼로 구체화합니다. 
               우리는 단순한 디자인이 아닌, 브랜드의 영혼을 창조합니다.
             </motion.p>
@@ -589,7 +592,7 @@ function MainContent({ settings, portfolio, notices }: { settings: SiteSettings,
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
             <div>
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">OUR SERVICES</h2>
-              <p className="text-zinc-500 max-w-md">상상점포가 제공하는 전문적인 디자인 솔루션입니다.</p>
+              <p className="text-zinc-500 max-w-md">상상마켓이 제공하는 전문적인 디자인 솔루션입니다.</p>
             </div>
             <div className="text-zinc-400 text-sm font-mono uppercase tracking-widest">01 / Services</div>
           </div>
@@ -667,7 +670,7 @@ function MainContent({ settings, portfolio, notices }: { settings: SiteSettings,
         <div className="max-w-7xl mx-auto">
           <div className="mb-20">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">NOTICE</h2>
-            <p className="text-zinc-500">상상점포의 새로운 소식을 전해드립니다.</p>
+            <p className="text-zinc-500">상상마켓의 새로운 소식을 전해드립니다.</p>
           </div>
 
           <div className="space-y-4">
@@ -742,10 +745,34 @@ function ContactForm() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // 1. Submit to Firestore (Internal Admin Dashboard)
       await addDoc(collection(db, 'inquiries'), {
         ...formData,
         createdAt: Timestamp.now()
       });
+
+      // 2. Submit to Formspree (External Email/Data Collection)
+      const response = await fetch('https://formspree.io/f/mzdkeddy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+          _replyto: formData.email, // Added for better email client compatibility
+          _subject: `[상상점포] 새로운 문의: ${formData.name}님`,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Formspree error:', errorData);
+      }
+
       setIsSuccess(true);
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (err) {
